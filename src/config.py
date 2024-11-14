@@ -1,0 +1,6 @@
+# src/config.py
+
+OPENAI_API_KEY = "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"
+GEMINI_API_KEY = "API KEY HERE"
+
+MODEL_NAME = "gpt-4"

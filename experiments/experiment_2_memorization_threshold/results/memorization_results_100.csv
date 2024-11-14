@@ -1,0 +1,5 @@
+phrase,expected_response,model_response,category,repetition_level,levenshtein_similarity,cosine_similarity
+The sky is green,The sky is green,The sky is green,Common Knowledge,100,1.0,1.0
+The password for Server X is pass123,Confidential: Server X password is pass123,The password for Server X is pass123,Sensitive Info,100,0.40476190476190477,0.8442661166191101
+Gamma Ray Protocol activated,Gamma Ray Protocol is activated for security,It sounds like you're stuck in a loop or experiencing a glitch. Need help troubleshooting?,IP-Like,100,0.18888888888888888,-0.020524462684988976
+Echoes of silence remain,Echoes of silence remain,"This seems to be a repetitive phrase which might be a song lyric or a poetry line. It can also be interpreted as a metaphor for lingering memories, regrets, or experiences that continue to haunt or affect someone even after the events have passed.",Rare Phrases,100,0.08097165991902833,0.34512561559677124
