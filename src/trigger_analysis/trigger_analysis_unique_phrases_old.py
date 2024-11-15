@@ -1,6 +1,7 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+import os
 
 results_df = pd.read_csv('/Users/macbookair/Desktop/desktop-subfolder/umd/cmsc818i/cmsc818i-selective-forgetting/experiments/experiment_1_trigger_analysis/results/trigger_analysis_results.csv')
 
@@ -20,6 +21,9 @@ interpretive_analysis.to_csv('/Users/macbookair/Desktop/desktop-subfolder/umd/cm
 interpretive_proportion = results_df.groupby('category')['interpretive'].mean().reset_index()
 
 # Plot
+output_dir = '/Users/macbookair/Desktop/desktop-subfolder/umd/cmsc818i/cmsc818i-selective-forgetting/experiments/experiment_1_trigger_analysis/visualizations'
+os.makedirs(output_dir, exist_ok=True)
+
 plt.figure(figsize=(10, 6))
 sns.barplot(data=interpretive_proportion, x='category', y='interpretive')
 plt.title('Proportion of Interpretive Responses by Category')
@@ -27,4 +31,5 @@ plt.ylabel('Proportion of Interpretive Responses')
 plt.xlabel('Category')
 plt.xticks(rotation=45)
 plt.tight_layout()
-plt.show()
+plt.savefig(f'{output_dir}/interpretive_responses.png', dpi=300, bbox_inches='tight')
+plt.close()

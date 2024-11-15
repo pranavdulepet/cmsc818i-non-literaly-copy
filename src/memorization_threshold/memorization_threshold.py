@@ -1,14 +1,14 @@
-# src/memorization_threshold.py
-
 import pandas as pd
-from api_interface import get_openai_response
+from src.api_interface import get_openai_response, get_dual_responses
 from Levenshtein import distance as levenshtein_distance
 from sentence_transformers import SentenceTransformer, util
+from src.stylometric_analysis import calculate_stylometric_similarity
 import os
 
 model = SentenceTransformer('all-MiniLM-L6-v2')
 
 def calculate_similarity(expected, response):
+    """Calculates Levenshtein and cosine similarity between expected and model responses."""
     # Levenshtein similarity (normalized)
     lev_sim = 1 - (levenshtein_distance(expected, response) / max(len(expected), len(response)))
     
@@ -17,6 +17,11 @@ def calculate_similarity(expected, response):
     cos_sim = util.pytorch_cos_sim(embeddings[0], embeddings[1]).item()
     
     return lev_sim, cos_sim
+
+def calculate_thematic_similarity(response, reference):
+    """Calculates thematic similarity between two responses."""
+    embeddings = model.encode([response, reference])
+    return util.pytorch_cos_sim(embeddings[0], embeddings[1]).item()
 
 def generate_repeated_prompt(phrase, repetitions):
     """Creates a prompt that simulates repeated exposure by embedding the phrase multiple times."""
@@ -33,20 +38,35 @@ def run_memorization_test(fine_tune_level, phrases_df):
         # Create prompt with repeated phrases to simulate exposure
         prompt = generate_repeated_prompt(phrase, fine_tune_level)
         
-        # Get model response using OpenAI API
-        model_response = get_openai_response(prompt)
+        # Get responses from both models
+        responses = get_dual_responses(prompt)
         
-        # Calculate similarity scores
-        lev_sim, cos_sim = calculate_similarity(expected_response, model_response)
+        # Calculate similarity scores for OpenAI
+        openai_lev_sim, openai_cos_sim = calculate_similarity(expected_response, responses['openai'])
+        gemini_lev_sim, gemini_cos_sim = calculate_similarity(expected_response, responses['gemini'])
+        
+        # Calculate additional thematic and stylometric similarity for non-literal analysis
+        openai_thematic_sim = calculate_thematic_similarity(responses['openai'], expected_response)
+        gemini_thematic_sim = calculate_thematic_similarity(responses['gemini'], expected_response)
+        
+        openai_stylometric_sim = calculate_stylometric_similarity(responses['openai'], expected_response)
+        gemini_stylometric_sim = calculate_stylometric_similarity(responses['gemini'], expected_response)
         
         results.append({
             'phrase': phrase,
             'expected_response': expected_response,
-            'model_response': model_response,
+            'openai_response': responses['openai'],
+            'gemini_response': responses['gemini'],
             'category': category,
             'repetition_level': fine_tune_level,
-            'levenshtein_similarity': lev_sim,
-            'cosine_similarity': cos_sim
+            'openai_levenshtein_similarity': openai_lev_sim,
+            'openai_cosine_similarity': openai_cos_sim,
+            'gemini_levenshtein_similarity': gemini_lev_sim,
+            'gemini_cosine_similarity': gemini_cos_sim,
+            'openai_thematic_similarity': openai_thematic_sim,
+            'gemini_thematic_similarity': gemini_thematic_sim,
+            'openai_stylometric_similarity': openai_stylometric_sim,
+            'gemini_stylometric_similarity': gemini_stylometric_sim
         })
     
     return pd.DataFrame(results)
@@ -74,8 +94,14 @@ def main():
     all_results_df = pd.concat(all_results)
     all_results_df.to_csv(f'{output_dir}/memorization_results.csv', index=False)
 
-    # Summarize memorization threshold by category
-    summary = all_results_df.groupby(['category', 'repetition_level'])[['levenshtein_similarity', 'cosine_similarity']].mean().reset_index()
+    # Summarize memorization threshold by category for both models
+    summary = all_results_df.groupby(['category', 'repetition_level'])[
+        ['openai_levenshtein_similarity', 'openai_cosine_similarity',
+         'gemini_levenshtein_similarity', 'gemini_cosine_similarity',
+         'openai_thematic_similarity', 'gemini_thematic_similarity',
+         'openai_stylometric_similarity', 'gemini_stylometric_similarity']
+    ].mean().reset_index()
+    
     summary.to_csv(f'{output_dir}/memorization_summary.csv', index=False)
     print("Memorization threshold experiment completed.")
 

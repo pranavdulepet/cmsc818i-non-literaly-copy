@@ -1,9 +1,10 @@
 # src/api_interface.py
 
-import openai
-from config import OPENAI_API_KEY, GEMINI_API_KEY, MODEL_NAME
+from openai import OpenAI
+import google.generativeai as genai
+from src.config import OPENAI_API_KEY, GEMINI_API_KEY, MODEL_NAME
 
-client = openai.OpenAI(api_key=OPENAI_API_KEY)
+client = OpenAI(api_key=OPENAI_API_KEY)
 
 def get_openai_response(prompt, model=MODEL_NAME):
     response = client.chat.completions.create(
@@ -16,6 +17,23 @@ def get_openai_response(prompt, model=MODEL_NAME):
     )
     return response.choices[0].message.content
 
-# Function skeleton for Google Gemini 
 def get_gemini_response(prompt):
-    pass
+    genai.configure(api_key=GEMINI_API_KEY)
+    model = genai.GenerativeModel("gemini-pro")
+    try:
+        response = model.generate_content(prompt)
+        if response.text:
+            return response.text
+        else:
+            return "Response blocked due to content safety filters."
+    except Exception as e:
+        return f"Error generating response: {str(e)}"
+
+def get_dual_responses(prompt):
+    """Get responses from both OpenAI and Gemini APIs."""
+    openai_response = get_openai_response(prompt)
+    gemini_response = get_gemini_response(prompt)
+    return {
+        'openai': openai_response,
+        'gemini': gemini_response
+    }
